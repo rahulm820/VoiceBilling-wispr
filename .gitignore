@@ -3,3 +3,6 @@ backend/target/
 frontend/node_modules/
 .DS_Store
 *.log
+
+PROMPTS.md
+script.md
