@@ -33,3 +33,5 @@ CREATE TABLE ledger_items (
 
 CREATE INDEX idx_ledger_entries_user_date ON ledger_entries(user_id, entry_date DESC);
 CREATE INDEX idx_ledger_entries_user_type ON ledger_entries(user_id, type);
+
+CREATE INDEX IF NOT EXISTS idx_ledger_items_entry ON ledger_items(ledger_entry_id);
