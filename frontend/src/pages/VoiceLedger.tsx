@@ -6,7 +6,8 @@ import { Button } from '../components/Button'
 import { useSettings } from '../hooks/useSettings'
 import { useNavigate } from 'react-router-dom'
 import { createLedger } from '../api/ledger'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQueryClient, useQuery } from '@tanstack/react-query'
+import { getProducts } from '../api/products'
 
 export const VoiceLedger: React.FC = () => {
   const [status, setStatus] = useState('Ready')
@@ -17,11 +18,14 @@ export const VoiceLedger: React.FC = () => {
   const [text, setText] = useState('')
   const mediaRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
+  const timerRef = useRef<number | null>(null)
   const { settings } = useSettings()
   const navigate = useNavigate()
   const qc = useQueryClient()
   const [partyName, setPartyName] = useState('')
   const [partyPhone, setPartyPhone] = useState('')
+  const { data: prodData } = useQuery({ queryKey: ['products'], queryFn: () => getProducts() })
+  const products = prodData?.products || []
 
   const start = async () => {
     try {
@@ -32,12 +36,23 @@ export const VoiceLedger: React.FC = () => {
       mr.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data) }
       mr.onstop = async () => {
         stream.getTracks().forEach(t => t.stop())
+        if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null }
         const blob = new Blob(chunksRef.current, { type: 'audio/webm' })
         setStatus('Transcribing with Wispr')
         try {
           const res = await transcribeLedger(blob)
           setTranscript(res.transcript || '')
-          setItems(res.items || [])
+          const mapped = (res.items || []).map((it: any) => {
+            const p = products.find(pr => pr.name.toLowerCase() === it.name.toLowerCase())
+            return {
+              name: it.name,
+              quantity: it.quantity,
+              unit: it.unit,
+              price: p?.defaultSellingPrice ?? it.price ?? 0,
+              priceFromSheet: !!p
+            }
+          })
+          setItems(mapped)
           setStatus('Review')
         } catch (e: any) {
           setStatus('Error: ' + e.message)
@@ -46,14 +61,23 @@ export const VoiceLedger: React.FC = () => {
       mr.start()
       setRecording(true)
       setStatus('Listening')
+      timerRef.current = window.setTimeout(() => {
+        if (mediaRef.current && mediaRef.current.state === 'recording') {
+          mediaRef.current.stop()
+          setRecording(false)
+        }
+      }, 60000)
     } catch (e: any) {
       setStatus('Mic error: ' + e.message)
     }
   }
 
   const stop = () => {
-    mediaRef.current?.stop()
+    if (mediaRef.current && mediaRef.current.state === 'recording') {
+      mediaRef.current.stop()
+    }
     setRecording(false)
+    if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null }
   }
 
   const parseText = async () => {
@@ -61,7 +85,17 @@ export const VoiceLedger: React.FC = () => {
     try {
       const res = await transcribeText(text)
       setTranscript(res.transcript || text)
-      setItems(res.items || [])
+      const mapped = (res.items || []).map((it: any) => {
+        const p = products.find(pr => pr.name.toLowerCase() === it.name.toLowerCase())
+        return {
+          name: it.name,
+          quantity: it.quantity,
+          unit: it.unit,
+          price: p?.defaultSellingPrice ?? it.price ?? 0,
+          priceFromSheet: !!p
+        }
+      })
+      setItems(mapped)
       setStatus('Review')
       setTextMode(false)
     } catch (e: any) {
@@ -76,6 +110,7 @@ export const VoiceLedger: React.FC = () => {
   }
 
   const removeItem = (idx: number) => setItems(items.filter((_, i) => i !== idx))
+  const addItem = () => setItems([...items, { name: '', quantity: 1, unit: 'kg', price: 0 }])
 
   const subtotal = items.reduce((s, i) => s + Number(i.price || 0) * Number(i.quantity || 0), 0)
   const gstApplied = settings?.gstOnByDefault ?? true
@@ -116,7 +151,7 @@ export const VoiceLedger: React.FC = () => {
   }
 
   return (
-    <div style={{ maxWidth: 700 }}>
+    <div style={{ maxWidth: 900 }}>
       <h1>Voice Ledger</h1>
       <Card>
         <div style={{ textAlign: 'center', padding: 24 }}>
@@ -140,15 +175,24 @@ export const VoiceLedger: React.FC = () => {
       {items.length > 0 && (
         <Card>
           <div style={{ fontWeight: 600, marginBottom: 8 }}>Items</div>
-          {items.map((item, idx) => (
-            <div key={idx} style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
-              <input value={item.name} onChange={e => updateItem(idx, 'name', e.target.value)} style={{ padding: 8 }} />
-              <input type="number" value={item.quantity} onChange={e => updateItem(idx, 'quantity', e.target.value)} style={{ width: 80, padding: 8 }} />
-              <input value={item.unit} onChange={e => updateItem(idx, 'unit', e.target.value)} style={{ width: 60, padding: 8 }} />
-              <input type="number" value={item.price} onChange={e => updateItem(idx, 'price', e.target.value)} style={{ width: 100, padding: 8 }} />
-              <Button variant="danger" onClick={() => removeItem(idx)}>Remove</Button>
-            </div>
-          ))}
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr><th style={{ textAlign: 'left' }}>Item</th><th>Quantity</th><th>Unit</th><th>Price</th><th>Price from sheet</th><th></th></tr>
+            </thead>
+            <tbody>
+              {items.map((item, idx) => (
+                <tr key={idx}>
+                  <td><input value={item.name} onChange={e => updateItem(idx, 'name', e.target.value)} style={{ padding: 8 }} /></td>
+                  <td><input type="number" value={item.quantity} onChange={e => updateItem(idx, 'quantity', e.target.value)} style={{ width: 80, padding: 8 }} /></td>
+                  <td><input value={item.unit} onChange={e => updateItem(idx, 'unit', e.target.value)} style={{ width: 60, padding: 8 }} /></td>
+                  <td><input type="number" value={item.price} onChange={e => updateItem(idx, 'price', e.target.value)} style={{ width: 100, padding: 8 }} /></td>
+                  <td style={{ textAlign: 'center' }}>{item.priceFromSheet ? 'Yes' : 'No'}</td>
+                  <td><Button variant="danger" onClick={() => removeItem(idx)}>Remove</Button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <Button variant="secondary" onClick={addItem} style={{ marginTop: 8 }}>Add Item</Button>
           <div style={{ marginTop: 12 }}>
             <input placeholder="Party name" value={partyName} onChange={e => setPartyName(e.target.value)} style={{ padding: 8, marginRight: 8 }} />
             <input placeholder="Phone" value={partyPhone} onChange={e => setPartyPhone(e.target.value)} style={{ padding: 8 }} />

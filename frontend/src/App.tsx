@@ -11,6 +11,7 @@ import { useAuth } from './hooks/useAuth'
 import { ManualLedger } from './pages/ManualLedger'
 import { LedgerDetails } from './pages/LedgerDetails'
 import { VoiceLedger } from './pages/VoiceLedger'
+import { GlobalVoice } from './components/GlobalVoice'
 
 const Layout: React.FC<React.PropsWithChildren> = ({ children }) => {
   const { logout } = useAuth()
@@ -28,6 +29,7 @@ const Layout: React.FC<React.PropsWithChildren> = ({ children }) => {
         </nav>
       </aside>
       <main style={{ flex: 1, padding: 24 }}>{children}</main>
+      <GlobalVoice />
     </div>
   )
 }
