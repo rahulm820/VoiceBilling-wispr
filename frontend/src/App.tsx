@@ -5,9 +5,12 @@ import { Ledger } from './pages/Ledger'
 import { Stock } from './pages/Stock'
 import { PriceSheet } from './pages/PriceSheet'
 import { Settings } from './pages/Settings'
-import { Auth } from './pages/Auth'
+import { AuthPage } from './pages/AuthPage'
+import { ProtectedRoute } from './components/ProtectedRoute'
+import { useAuth } from './hooks/useAuth'
 
 const Layout: React.FC<React.PropsWithChildren> = ({ children }) => {
+  const { logout } = useAuth()
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
       <aside style={{ width: 220, background: 'var(--color-primary)', color: '#fff', padding: 16 }}>
@@ -18,7 +21,7 @@ const Layout: React.FC<React.PropsWithChildren> = ({ children }) => {
           <NavLink to="/stock" style={{ color: '#fff', textDecoration: 'none' }}>Stock</NavLink>
           <NavLink to="/price-sheet" style={{ color: '#fff', textDecoration: 'none' }}>Price Sheet</NavLink>
           <NavLink to="/settings" style={{ color: '#fff', textDecoration: 'none' }}>Settings</NavLink>
-          <NavLink to="/auth" style={{ color: '#fff', textDecoration: 'none' }}>Logout</NavLink>
+          <button onClick={logout} style={{ textAlign: 'left', background: 'none', border: 'none', color: '#fff', padding: 0 }}>Logout</button>
         </nav>
       </aside>
       <main style={{ flex: 1, padding: 24 }}>{children}</main>
@@ -29,12 +32,12 @@ const Layout: React.FC<React.PropsWithChildren> = ({ children }) => {
 const App: React.FC = () => {
   return (
     <Routes>
-      <Route path="/auth" element={<Auth />} />
-      <Route path="/" element={<Layout><Insights /></Layout>} />
-      <Route path="/ledger/*" element={<Layout><Ledger /></Layout>} />
-      <Route path="/stock/*" element={<Layout><Stock /></Layout>} />
-      <Route path="/price-sheet" element={<Layout><PriceSheet /></Layout>} />
-      <Route path="/settings" element={<Layout><Settings /></Layout>} />
+      <Route path="/auth" element={<AuthPage />} />
+      <Route path="/" element={<ProtectedRoute><Layout><Insights /></Layout></ProtectedRoute>} />
+      <Route path="/ledger/*" element={<ProtectedRoute><Layout><Ledger /></Layout></ProtectedRoute>} />
+      <Route path="/stock/*" element={<ProtectedRoute><Layout><Stock /></Layout></ProtectedRoute>} />
+      <Route path="/price-sheet" element={<ProtectedRoute><Layout><PriceSheet /></Layout></ProtectedRoute>} />
+      <Route path="/settings" element={<ProtectedRoute><Layout><Settings /></Layout></ProtectedRoute>} />
     </Routes>
   )
 }
