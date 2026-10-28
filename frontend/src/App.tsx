@@ -8,6 +8,9 @@ import { Settings } from './pages/Settings'
 import { AuthPage } from './pages/AuthPage'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { useAuth } from './hooks/useAuth'
+import { ManualLedger } from './pages/ManualLedger'
+import { LedgerDetails } from './pages/LedgerDetails'
+import { VoiceLedger } from './pages/VoiceLedger'
 
 const Layout: React.FC<React.PropsWithChildren> = ({ children }) => {
   const { logout } = useAuth()
@@ -34,7 +37,10 @@ const App: React.FC = () => {
     <Routes>
       <Route path="/auth" element={<AuthPage />} />
       <Route path="/" element={<ProtectedRoute><Layout><Insights /></Layout></ProtectedRoute>} />
-      <Route path="/ledger/*" element={<ProtectedRoute><Layout><Ledger /></Layout></ProtectedRoute>} />
+      <Route path="/ledger" element={<ProtectedRoute><Layout><Ledger /></Layout></ProtectedRoute>} />
+      <Route path="/ledger/manual" element={<ProtectedRoute><Layout><ManualLedger /></Layout></ProtectedRoute>} />
+      <Route path="/ledger/voice" element={<ProtectedRoute><Layout><VoiceLedger /></Layout></ProtectedRoute>} />
+      <Route path="/ledger/:id" element={<ProtectedRoute><Layout><LedgerDetails /></Layout></ProtectedRoute>} />
       <Route path="/stock/*" element={<ProtectedRoute><Layout><Stock /></Layout></ProtectedRoute>} />
       <Route path="/price-sheet" element={<ProtectedRoute><Layout><PriceSheet /></Layout></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><Layout><Settings /></Layout></ProtectedRoute>} />
