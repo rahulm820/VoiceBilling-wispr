@@ -19,9 +19,9 @@ public class LedgerController {
     private final CurrentUserService currentUserService;
 
     @PostMapping
-    public ResponseEntity<LedgerDtos.LedgerEntryResponse> create(@Valid @RequestBody LedgerDtos.LedgerEntryRequest req) {
+    public ResponseEntity<LedgerDtos.LedgerEntryEnvelope> create(@Valid @RequestBody LedgerDtos.LedgerEntryRequest req) {
         String userId = currentUserService.getCurrentUserId();
-        return ResponseEntity.ok(ledgerService.create(userId, req));
+        return ResponseEntity.ok(new LedgerDtos.LedgerEntryEnvelope(ledgerService.create(userId, req)));
     }
 
     @GetMapping
@@ -36,8 +36,8 @@ public class LedgerController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<LedgerDtos.LedgerEntryResponse> get(@PathVariable String id) {
+    public ResponseEntity<LedgerDtos.LedgerEntryEnvelope> get(@PathVariable String id) {
         String userId = currentUserService.getCurrentUserId();
-        return ResponseEntity.ok(ledgerService.get(userId, id));
+        return ResponseEntity.ok(new LedgerDtos.LedgerEntryEnvelope(ledgerService.get(userId, id)));
     }
 }

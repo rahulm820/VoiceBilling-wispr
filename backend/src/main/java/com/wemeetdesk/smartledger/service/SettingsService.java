@@ -5,6 +5,7 @@ import com.wemeetdesk.smartledger.model.Settings;
 import com.wemeetdesk.smartledger.repository.SettingsRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,7 +20,7 @@ public class SettingsService {
     private final SettingsRepository settingsRepository;
 
     @Cacheable(value = "settings", key = "#userId")
-    @Transactional(readOnly = true)
+    @Transactional
     public SettingsDtos.SettingsResponse getOrCreate(String userId) {
         Settings settings = settingsRepository.findByUserId(userId)
                 .orElseGet(() -> createDefaults(userId));
@@ -44,7 +45,10 @@ public class SettingsService {
         return settingsRepository.save(s);
     }
 
-    @CacheEvict(value = "settings", key = "#userId")
+    @Caching(evict = {
+            @CacheEvict(value = "settings", key = "#userId"),
+            @CacheEvict(value = "insights", allEntries = true)
+    })
     @Transactional
     public SettingsDtos.SettingsResponse update(String userId, SettingsDtos.SettingsUpdateRequest req) {
         Settings settings = settingsRepository.findByUserId(userId)
@@ -65,12 +69,14 @@ public class SettingsService {
         return map(settingsRepository.save(settings));
     }
 
+    @CacheEvict(value = "settings", key = "#userId")
     @Transactional
     public SettingsDtos.NextBillNumberResponse getNextBillNumber(String userId) {
-        Settings settings = settingsRepository.findByUserId(userId)
+        Settings settings = settingsRepository.findByUserIdForUpdate(userId)
                 .orElseGet(() -> createDefaults(userId));
         String billNo = settings.getBillNumberPrefix() + settings.getNextBillNumber();
-        settingsRepository.incrementBillNumber(userId);
+        settings.setNextBillNumber(settings.getNextBillNumber() + 1);
+        settingsRepository.save(settings);
         return new SettingsDtos.NextBillNumberResponse(billNo);
     }
 

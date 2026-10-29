@@ -1,5 +1,6 @@
 package com.wemeetdesk.smartledger.dto;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
@@ -22,7 +23,7 @@ public class LedgerDtos {
             String partyPhone,
             String entryNumber,
             @NotNull Instant date,
-            @NotNull List<LedgerItemInput> items,
+            @NotNull @Valid List<LedgerItemInput> items,
             @NotNull BigDecimal subtotal,
             Boolean gstApplied,
             BigDecimal gstRate,
@@ -61,6 +62,8 @@ public class LedgerDtos {
             Instant createdAt,
             List<String> warnings
     ) {}
+
+    public record LedgerEntryEnvelope(LedgerEntryResponse entry) {}
 
     public record LedgerListResponse(List<LedgerEntryResponse> entries) {}
 }

@@ -1,6 +1,10 @@
 package com.wemeetdesk.smartledger.dto;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
@@ -13,21 +17,21 @@ public class ProductDtos {
     public record ProductRequest(
             @NotBlank String name,
             @NotBlank String unit,
-            BigDecimal stockQuantity,
-            BigDecimal costPrice,
-            BigDecimal defaultSellingPrice,
-            BigDecimal gstOverride,
-            Integer lowStockThreshold
+            @JsonAlias("quantity") @PositiveOrZero(message = "Quantity cannot be negative") BigDecimal stockQuantity,
+            @PositiveOrZero(message = "Price cannot be negative") BigDecimal costPrice,
+            @PositiveOrZero(message = "Price cannot be negative") BigDecimal defaultSellingPrice,
+            @PositiveOrZero @DecimalMax("100") BigDecimal gstOverride,
+            @PositiveOrZero Integer lowStockThreshold
     ) {}
 
     public record ProductUpdateRequest(
             String name,
             String unit,
-            BigDecimal stockQuantity,
-            BigDecimal costPrice,
-            BigDecimal defaultSellingPrice,
-            BigDecimal gstOverride,
-            Integer lowStockThreshold
+            @JsonAlias("quantity") @PositiveOrZero(message = "Quantity cannot be negative") BigDecimal stockQuantity,
+            @PositiveOrZero(message = "Price cannot be negative") BigDecimal costPrice,
+            @PositiveOrZero(message = "Price cannot be negative") BigDecimal defaultSellingPrice,
+            @PositiveOrZero @DecimalMax("100") BigDecimal gstOverride,
+            @PositiveOrZero Integer lowStockThreshold
     ) {}
 
     public record ProductResponse(
@@ -46,9 +50,9 @@ public class ProductDtos {
 
     public record ProductListResponse(List<ProductResponse> products) {}
 
-    public record PriceSheetItem(String id, BigDecimal defaultSellingPrice, BigDecimal gstOverride) {}
+    public record PriceSheetItem(String id, @PositiveOrZero(message = "Price cannot be negative") BigDecimal defaultSellingPrice, @PositiveOrZero @DecimalMax("100") BigDecimal gstOverride) {}
 
-    public record PriceSheetRequest(@NotNull List<PriceSheetItem> items) {}
+    public record PriceSheetRequest(@NotNull @Valid List<PriceSheetItem> items) {}
 
     public record ProductUpsertResponse(ProductResponse product, String message) {}
 }

@@ -36,28 +36,49 @@ public class LedgerService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Customer name required");
         }
 
+        String type = req.type().trim().toLowerCase();
+        if (!type.equals("sale") && !type.equals("purchase")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid entry type");
+        }
+
         // recompute
         BigDecimal subtotal = BigDecimal.ZERO;
         for (LedgerDtos.LedgerItemInput it : req.items()) {
             BigDecimal qty = it.quantity() == null ? BigDecimal.ZERO : it.quantity();
             BigDecimal up = it.unitPrice() == null ? BigDecimal.ZERO : it.unitPrice();
+            if (qty.signum() <= 0) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Quantity must be greater than zero");
+            }
+            if (up.signum() < 0) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Price cannot be negative");
+            }
             BigDecimal lt = up.multiply(qty).setScale(2, RoundingMode.HALF_UP);
             subtotal = subtotal.add(lt);
         }
         BigDecimal gstRate = req.gstRate() == null ? BigDecimal.ZERO : req.gstRate();
+        if (gstRate.signum() < 0 || gstRate.compareTo(new BigDecimal("100")) > 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid GST rate");
+        }
         Boolean gstApplied = Boolean.TRUE.equals(req.gstApplied());
         BigDecimal gstAmount = gstApplied ? subtotal.multiply(gstRate).divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP) : BigDecimal.ZERO;
         BigDecimal discountPercent = req.discountPercent() == null ? BigDecimal.ZERO : req.discountPercent();
+        if (discountPercent.signum() < 0 || discountPercent.compareTo(new BigDecimal("100")) > 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid discount");
+        }
         BigDecimal discountAmount = discountPercent.compareTo(BigDecimal.ZERO) > 0 ? subtotal.multiply(discountPercent).divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP) : (req.discountAmount() == null ? BigDecimal.ZERO : req.discountAmount());
+        if (discountAmount.signum() < 0 || discountAmount.compareTo(subtotal.add(gstAmount)) > 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid discount");
+        }
         BigDecimal total = subtotal.add(gstAmount).subtract(discountAmount).setScale(2, RoundingMode.HALF_UP);
-        if (req.total() != null && req.total().compareTo(total) != 0) {
+        // client sends unrounded floats; allow Rs 1 drift, the server total is what gets stored
+        if (req.total() != null && req.total().subtract(total).abs().compareTo(BigDecimal.ONE) > 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Total mismatch");
         }
 
         LedgerEntry entry = LedgerEntry.builder()
                 .id(UUID.randomUUID().toString())
                 .userId(userId)
-                .type(req.type() == null ? "sale" : req.type().toLowerCase())
+                .type(type)
                 .partyName(req.partyName())
                 .partyPhone(req.partyPhone())
                 .entryNumber(req.entryNumber())
@@ -114,7 +135,7 @@ public class LedgerService {
                     costSnap = up;
                 } else {
                     product.setStockQuantity(product.getStockQuantity().add(qty));
-                    if (costSnap != null) product.setCostPrice(costSnap);
+                    product.setCostPrice(up);
                     product.setUpdatedAt(Instant.now());
                     productRepository.save(product);
                 }
@@ -138,7 +159,12 @@ public class LedgerService {
 
     @Transactional(readOnly = true)
     public LedgerDtos.LedgerListResponse list(String userId, String type, String search, Instant from, Instant to) {
-        List<LedgerEntry> entries = ledgerEntryRepository.search(userId, type, search, from, to);
+        List<LedgerEntry> entries = ledgerEntryRepository.search(
+                userId,
+                type == null ? "" : type.trim(),
+                search == null ? "" : search.trim(),
+                from == null ? Instant.EPOCH : from,
+                to == null ? Instant.parse("9999-12-31T00:00:00Z") : to);
         return new LedgerDtos.LedgerListResponse(entries.stream().map(e -> map(e, List.of())).toList());
     }
 

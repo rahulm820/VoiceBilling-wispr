@@ -77,7 +77,10 @@ public class ProductService {
     public ProductDtos.ProductResponse update(String userId, String id, ProductDtos.ProductUpdateRequest req) {
         Product p = productRepository.findByIdAndUserId(id, userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
-        if (req.name() != null) p.setName(req.name().trim());
+        if (req.name() != null) {
+            if (req.name().isBlank()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Name required");
+            p.setName(req.name().trim());
+        }
         if (req.unit() != null) {
             validateUnit(req.unit().trim());
             p.setUnit(req.unit().trim());
