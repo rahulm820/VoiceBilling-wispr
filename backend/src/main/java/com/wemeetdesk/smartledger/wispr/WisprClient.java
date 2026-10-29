@@ -9,6 +9,9 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import java.io.IOException;
 
 @Component
@@ -38,10 +41,33 @@ public class WisprClient {
             if (!response.getStatusCode().is2xxSuccessful()) {
                 throw new WisprException("Wispr transcription failed");
             }
-            return response.getBody() == null ? "" : response.getBody();
+            return extractText(response.getBody());
         } catch (Exception e) {
             if (e instanceof WisprException) throw (WisprException) e;
             throw new WisprException("Wispr transcription failed", e);
         }
+    }
+
+    /** Wispr answers with JSON; the transcript is in a text-like field. Plain-text bodies pass through. */
+    private String extractText(String body) {
+        if (body == null || body.isBlank()) return "";
+        String trimmed = body.trim();
+        if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) return trimmed;
+        try {
+            JsonNode root = new ObjectMapper().readTree(trimmed);
+            for (String field : new String[]{"text", "transcript", "transcription", "result", "data"}) {
+                JsonNode n = root.get(field);
+                if (n == null) continue;
+                if (n.isTextual()) return n.asText();
+                if (n.isObject()) {
+                    for (String inner : new String[]{"text", "transcript"}) {
+                        if (n.has(inner) && n.get(inner).isTextual()) return n.get(inner).asText();
+                    }
+                }
+            }
+        } catch (IOException ignored) {
+            // fall through to a clear error
+        }
+        throw new WisprException("Wispr replied in a format we could not read");
     }
 }

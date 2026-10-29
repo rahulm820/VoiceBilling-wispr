@@ -36,11 +36,12 @@ public class VoiceController {
                 m.put("quantity", p.quantity());
                 m.put("unit", p.unit());
                 m.put("price", p.price() == null ? BigDecimal.ZERO : p.price());
+                m.put("priceFromSheet", p.priceFromSheet());
                 items.add(m);
             }
             Map<String, Object> res = new HashMap<>();
             res.put("success", true);
-            res.put("transcript", transcript);
+            res.put("transcript", WisprParserService.cleanTranscript(transcript));
             res.put("items", items);
             return ResponseEntity.ok(res);
         } catch (WisprException e) {
@@ -68,11 +69,12 @@ public class VoiceController {
             m.put("quantity", p.quantity());
             m.put("unit", p.unit());
             m.put("price", p.price() == null ? BigDecimal.ZERO : p.price());
+                m.put("priceFromSheet", p.priceFromSheet());
             items.add(m);
         }
         Map<String, Object> res = new HashMap<>();
         res.put("success", true);
-        res.put("transcript", text == null ? "" : text);
+        res.put("transcript", WisprParserService.cleanTranscript(text));
         res.put("items", items);
         return ResponseEntity.ok(res);
     }
