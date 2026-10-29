@@ -66,3 +66,27 @@ export interface LedgerEntry {
   createdAt: string
   warnings?: string[]
 }
+
+export interface LowStockItem {
+  id: string
+  name: string
+  stockQuantity: number
+  unit: string
+}
+
+export interface DailyInsights {
+  salesToday?: number
+  salesChangePercent?: number | null
+  salesCount?: number
+  averageSaleValue?: number
+  purchasesToday?: number
+  estimatedGrossProfit?: number
+  lowStockItems?: LowStockItem[]
+}
+
+export interface TrendDay {
+  date: string
+  sales: number
+  purchases: number
+  profit: number
+}
