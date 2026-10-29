@@ -1,97 +1,190 @@
-import React, { useEffect, useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { getProducts, updatePriceSheet } from '../api/products'
-import { Card } from '../components/Card'
-import { Button } from '../components/Button'
+import React, { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Loader2, Search, Tags, TriangleAlert } from 'lucide-react'
+import { toast } from 'sonner'
+import { getProducts, updatePriceSheet } from '@/api/products'
+import { useSettings } from '@/hooks/useSettings'
+import { inr } from '@/lib/format'
+import { cn } from '@/lib/utils'
+import { PageHeader } from '@/components/PageHeader'
+import { EmptyState } from '@/components/EmptyState'
+import { ErrorPanel } from '@/components/ErrorPanel'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+
+type Edit = { price?: string; gst?: string }
 
 export const PriceSheet: React.FC = () => {
   const qc = useQueryClient()
-  const { data, isLoading } = useQuery({ queryKey: ['products'], queryFn: () => getProducts() })
-  const products = data?.products || []
-  const [rows, setRows] = useState<any[]>([])
+  const { settings } = useSettings()
+  const sym = settings?.currencySymbol || '₹'
+  const { data, isLoading, isError, error, refetch } = useQuery({ queryKey: ['products'], queryFn: () => getProducts() })
+  const products = useMemo(() => data?.products ?? [], [data])
+  const [edits, setEdits] = useState<Record<string, Edit>>({})
   const [search, setSearch] = useState('')
 
-  useEffect(() => {
-    setRows(products.map(p => ({ ...p, changed: false })))
-  }, [products])
-
   const mutation = useMutation({
-    mutationFn: (items: any[]) => updatePriceSheet(items),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['products'] })
+    mutationFn: updatePriceSheet,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['products'] })
+      qc.invalidateQueries({ queryKey: ['stock'] })
+    },
   })
 
-  const change = (id: string, key: string, value: any) => {
-    setRows(rows.map(r => r.id === id ? { ...r, [key]: value, changed: true } : r))
-  }
+  const setEdit = (id: string, patch: Edit) => setEdits((cur) => ({ ...cur, [id]: { ...cur[id], ...patch } }))
 
-  const filtered = rows.filter(r => r.name.toLowerCase().includes(search.toLowerCase()))
-  const changed = rows.filter(r => r.changed)
+  const priceOf = (id: string, base: number) => edits[id]?.price ?? String(base)
+  const gstOf = (id: string, base?: number | null) => edits[id]?.gst ?? (base == null ? '' : String(base))
+
+  const changed = products.filter((p) => {
+    const e = edits[p.id]
+    if (!e) return false
+    const priceChanged = e.price !== undefined && Number(e.price) !== p.defaultSellingPrice
+    const gstChanged = e.gst !== undefined && (e.gst === '' ? null : Number(e.gst)) !== (p.gstOverride ?? null)
+    return priceChanged || gstChanged
+  })
 
   const save = async () => {
-    const items = changed.map(r => ({ id: r.id, defaultSellingPrice: Number(r.defaultSellingPrice), gstOverride: r.gstOverride === '' ? null : (r.gstOverride == null ? null : Number(r.gstOverride)) }))
-    await mutation.mutateAsync(items)
-    setRows(rows.map(r => ({ ...r, changed: false })))
+    const items = changed.map((p) => ({
+      id: p.id,
+      defaultSellingPrice: Number(priceOf(p.id, p.defaultSellingPrice)),
+      gstOverride: gstOf(p.id, p.gstOverride) === '' ? null : Number(gstOf(p.id, p.gstOverride)),
+    }))
+    if (items.some((i) => Number.isNaN(i.defaultSellingPrice) || i.defaultSellingPrice < 0)) return toast.error('Prices cannot be negative.')
+    if (items.some((i) => i.gstOverride != null && (Number.isNaN(i.gstOverride) || i.gstOverride < 0 || i.gstOverride > 100)))
+      return toast.error('GST must be between 0 and 100.')
+    try {
+      await mutation.mutateAsync(items)
+      setEdits({})
+      toast.success(`${items.length} price${items.length === 1 ? '' : 's'} saved`)
+    } catch (e: any) {
+      toast.error(e.message)
+    }
   }
 
-  if (isLoading) return <div>Loading...</div>
+  const filtered = products.filter((p) => p.name.toLowerCase().includes(search.toLowerCase()))
 
   return (
-    <div>
-      <h1>Price Sheet</h1>
-      <div style={{ marginBottom: 12 }}>
-        <input placeholder="Search" value={search} onChange={e => setSearch(e.target.value)} style={{ padding: 8 }} />
-      </div>
-      {products.length === 0 && <Card><Empty /></Card>}
+    <div className={cn(changed.length > 0 && 'pb-20')}>
+      <PageHeader en="Price Sheet" hi="भाव" />
+
       {products.length > 0 && (
-        <Card>
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr>
-                  <th style={{ textAlign: 'left', padding: 8 }}>Name</th>
-                  <th>Unit</th>
-                  <th>Cost Price</th>
-                  <th>Default Selling Price</th>
-                  <th>Margin %</th>
-                  <th>GST Override</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map(r => {
-                  const margin = r.costPrice > 0 ? ((Number(r.defaultSellingPrice) - r.costPrice) / r.costPrice) * 100 : 0
-                  const warn = Number(r.defaultSellingPrice) < r.costPrice
+        <div className="relative mb-4 max-w-xs">
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
+          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search items" aria-label="Search items" className="pl-9" />
+        </div>
+      )}
+
+      {isError && <ErrorPanel message={`Could not load prices. ${(error as Error).message}`} onRetry={() => refetch()} />}
+
+      {!isError && (
+        <Card className="gap-0 overflow-hidden py-0">
+          {isLoading ? (
+            <div className="space-y-px">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={i} className="h-14 w-full rounded-none" />
+              ))}
+            </div>
+          ) : products.length === 0 ? (
+            <EmptyState
+              icon={Tags}
+              title="No prices to set yet"
+              hint="Items you add in Stock show up here, so you can set their selling price."
+              action={
+                <Button asChild>
+                  <Link to="/stock">Go to Stock</Link>
+                </Button>
+              }
+            />
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead scope="col">Item</TableHead>
+                  <TableHead scope="col" className="text-right">Cost</TableHead>
+                  <TableHead scope="col" className="text-right">Selling price</TableHead>
+                  <TableHead scope="col" className="text-right">Margin</TableHead>
+                  <TableHead scope="col" className="text-right">GST %</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filtered.map((p) => {
+                  const price = Number(priceOf(p.id, p.defaultSellingPrice))
+                  const margin = p.costPrice > 0 ? ((price - p.costPrice) / p.costPrice) * 100 : null
+                  const below = price < p.costPrice
+                  const dirty = changed.some((c) => c.id === p.id)
                   return (
-                    <tr key={r.id} style={{ background: r.changed ? '#fffbe6' : 'transparent' }}>
-                      <td style={{ padding: 8 }}>{r.name}</td>
-                      <td style={{ textAlign: 'center' }}>{r.unit}</td>
-                      <td style={{ textAlign: 'center' }}>{r.costPrice}</td>
-                      <td style={{ textAlign: 'center' }}>
-                        <input type="number" value={r.defaultSellingPrice} onChange={e => change(r.id, 'defaultSellingPrice', e.target.value)} style={{ width: 80, borderColor: warn ? 'var(--color-danger)' : 'var(--color-border)' }} />
-                        {warn && <div style={{ color: 'var(--color-danger)', fontSize: 11 }}>Below cost</div>}
-                      </td>
-                      <td style={{ textAlign: 'center' }}>{margin.toFixed(1)}%</td>
-                      <td style={{ textAlign: 'center' }}>
-                        <input type="number" value={r.gstOverride ?? ''} onChange={e => change(r.id, 'gstOverride', e.target.value)} style={{ width: 60 }} />
-                      </td>
-                    </tr>
+                    <TableRow key={p.id} className={cn('h-16', dirty && 'bg-info-soft hover:bg-info-soft', below && !dirty && 'bg-warning-soft hover:bg-warning-soft')}>
+                      <TableCell>
+                        <span className="font-semibold">{p.name}</span>
+                        <span className="ml-1 text-sm text-muted-foreground">/ {p.unit}</span>
+                      </TableCell>
+                      <TableCell className="text-right text-muted-foreground">{inr(p.costPrice, sym)}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex flex-col items-end gap-1">
+                          <Input
+                            type="number"
+                            min={0}
+                            step="any"
+                            inputMode="decimal"
+                            value={priceOf(p.id, p.defaultSellingPrice)}
+                            onChange={(e) => setEdit(p.id, { price: e.target.value })}
+                            className="h-10 w-28 text-right"
+                            aria-label={`${p.name} selling price`}
+                            aria-invalid={below}
+                          />
+                          {below && (
+                            <span className="inline-flex items-center gap-1 text-xs font-semibold text-warning">
+                              <TriangleAlert className="size-3.5" aria-hidden /> Below cost
+                            </span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className={cn('text-right font-semibold', margin != null && margin < 0 ? 'text-destructive' : 'text-success')}>
+                        {margin == null ? '-' : `${margin.toFixed(1)}%`}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Input
+                          type="number"
+                          min={0}
+                          max={100}
+                          step="any"
+                          inputMode="decimal"
+                          placeholder={String(settings?.defaultGstRate ?? 18)}
+                          value={gstOf(p.id, p.gstOverride)}
+                          onChange={(e) => setEdit(p.id, { gst: e.target.value })}
+                          className="ml-auto h-10 w-20 text-right"
+                          aria-label={`${p.name} GST override`}
+                        />
+                      </TableCell>
+                    </TableRow>
                   )
                 })}
-              </tbody>
-            </table>
-          </div>
-          <div style={{ marginTop: 12 }}>
-            <Button onClick={save} disabled={changed.length === 0 || mutation.isPending} loading={mutation.isPending}>Save All ({changed.length})</Button>
-          </div>
+              </TableBody>
+            </Table>
+          )}
         </Card>
+      )}
+
+      {changed.length > 0 && (
+        <div className="fixed inset-x-0 bottom-16 z-20 flex items-center justify-between gap-3 border-t bg-card px-4 py-3 md:bottom-0 md:left-[72px] md:px-6 lg:left-60 lg:px-8">
+          <p className="text-sm font-semibold">
+            {changed.length} unsaved change{changed.length === 1 ? '' : 's'}
+          </p>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setEdits({})} disabled={mutation.isPending}>
+              Discard
+            </Button>
+            <Button onClick={save} disabled={mutation.isPending}>
+              {mutation.isPending && <Loader2 className="animate-spin" aria-hidden />} Save all
+            </Button>
+          </div>
+        </div>
       )}
     </div>
   )
 }
-
-const Empty: React.FC = () => (
-  <div style={{ textAlign: 'center' }}>
-    <div>No products yet</div>
-    <Link to="/stock">Add in Stock</Link>
-  </div>
-)
