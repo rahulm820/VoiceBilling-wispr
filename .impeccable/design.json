@@ -1,0 +1,115 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-29T00:00:00Z",
+  "title": "Design System: SmartLedger",
+  "extensions": {
+    "colorMeta": {
+      "railway-blue": { "role": "primary", "displayName": "Railway Blue", "canonical": "#0b3a8c", "tonalRamp": ["#061f4d", "#0b3a8c", "#164aa8", "#2a58b4", "#6fa0ff", "#a9c0ee", "#e1e9f6", "#f3f6fb"] },
+      "signal-yellow": { "role": "secondary", "displayName": "Signal Yellow", "canonical": "#ffc20e", "tonalRamp": ["#1b1500", "#5c4600", "#9a7500", "#d9a400", "#ffc20e", "#ffd54d", "#ffe799", "#fff6d6"] },
+      "go-green": { "role": "tertiary", "displayName": "Go Green", "canonical": "#13803f", "tonalRamp": ["#0a3d1e", "#0f5f2f", "#13803f", "#2fa05c", "#46d98f", "#8fe8b9", "#e2f4e9", "#f2faf5"] },
+      "stop-red": { "role": "tertiary", "displayName": "Stop Red", "canonical": "#c62828", "tonalRamp": ["#4a0f0f", "#8a1a1a", "#c62828", "#e05555", "#ff7070", "#ffa3a3", "#fbe7e7", "#fdf5f5"] },
+      "caution-amber": { "role": "tertiary", "displayName": "Caution Amber", "canonical": "#9a5700", "tonalRamp": ["#3d2200", "#6b3d00", "#9a5700", "#b26a00", "#ffb454", "#ffd08f", "#fdf0d8", "#fef9ee"] },
+      "platform-paper": { "role": "neutral", "displayName": "Platform Paper", "canonical": "#f3f6fb", "tonalRamp": ["#0a1020", "#0e1a2f", "#4a5a75", "#b4c1d8", "#d3dceb", "#e9eef6", "#f3f6fb", "#ffffff"] },
+      "night-platform": { "role": "neutral", "displayName": "Night Platform", "canonical": "#0a1020", "tonalRamp": ["#0a1020", "#111a30", "#17223c", "#22304d", "#34456b", "#9fb0cc", "#e8eefa", "#ffffff"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "The one dominant sales figure and auth tagline." },
+      "headline": { "displayName": "Headline", "purpose": "Page title as a bilingual Sign pair." },
+      "title": { "displayName": "Title", "purpose": "Card and section heads." },
+      "body": { "displayName": "Body", "purpose": "Text and inputs, tabular figures on." },
+      "label": { "displayName": "Label", "purpose": "Buttons, table cells, form labels, rail links." },
+      "caption": { "displayName": "Caption", "purpose": "Dock labels, Hindi sub-labels, hints." }
+    },
+    "shadows": [
+      { "name": "mic-lift", "value": "0 4px 12px rgba(10,16,32,0.25)", "purpose": "Docked mic only, with a 4px ring in the ground colour." },
+      { "name": "overlay", "value": "shadcn shadow-md / shadow-lg", "purpose": "Menus, selects, dialogs, sheets." }
+    ],
+    "motion": [
+      { "name": "post", "value": "220ms cubic-bezier(0.16, 1, 0.3, 1) both; clip-path wipe, 6px settle, 70ms stagger per row", "purpose": "Departure-board reveal of parsed voice items." },
+      { "name": "ring", "value": "2.8s cubic-bezier(0.2, 0, 0, 1) infinite; scale 1 to 1.5, opacity 0.55 to 0", "purpose": "Pulse behind the recording mic." },
+      { "name": "reduced-motion", "value": "animation and transition duration 0.01ms", "purpose": "Global prefers-reduced-motion override." }
+    ],
+    "breakpoints": [
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button", "kind": "button", "refersTo": "button-primary",
+      "description": "Default action; blue in light, yellow in dark.",
+      "html": "<button class=\"ds-btn\">Save bill</button>",
+      "css": ".ds-btn{background:#0b3a8c;color:#fff;height:40px;padding:8px 16px;border:0;border-radius:6px;font:500 14px 'Noto Sans Variable',system-ui,sans-serif;cursor:pointer;transition:all .15s}.ds-btn:hover{background:rgba(11,58,140,.9)}.ds-btn:focus-visible{outline:2px solid #0b3a8c;outline-offset:2px}"
+    },
+    {
+      "name": "Signal Button", "kind": "button", "refersTo": "button-signal",
+      "description": "Voice actions only.",
+      "html": "<button class=\"ds-btn-signal\">New sale by voice</button>",
+      "css": ".ds-btn-signal{background:#ffc20e;color:#1b1500;height:40px;padding:8px 16px;border:0;border-radius:6px;font:600 14px 'Noto Sans Variable',system-ui,sans-serif;cursor:pointer}.ds-btn-signal:hover{background:rgba(255,194,14,.9)}.ds-btn-signal:focus-visible{outline:2px solid #0b3a8c;outline-offset:2px}"
+    },
+    {
+      "name": "Text Input", "kind": "input", "refersTo": "input-field",
+      "description": "44px field with hairline border and ring focus.",
+      "html": "<input class=\"ds-input\" placeholder=\"Party name\">",
+      "css": ".ds-input{height:44px;width:240px;padding:4px 12px;border:1px solid #b4c1d8;border-radius:6px;background:transparent;color:#0e1a2f;font:400 16px 'Noto Sans Variable',system-ui,sans-serif;outline:none}.ds-input::placeholder{color:#4a5a75}.ds-input:focus-visible{border-color:#0b3a8c;box-shadow:0 0 0 3px rgba(11,58,140,.5)}"
+    },
+    {
+      "name": "Panel Card", "kind": "card", "refersTo": "card-panel",
+      "description": "White panel with hairline border and a tabular figure.",
+      "html": "<div class=\"ds-card\"><div class=\"ds-card-t\">Sales today</div><div class=\"ds-card-n\">₹12,480</div></div>",
+      "css": ".ds-card{background:#fff;color:#0e1a2f;border:1px solid #d3dceb;border-radius:12px;padding:24px;width:240px}.ds-card-t{font:600 18px 'Noto Sans Variable',system-ui,sans-serif}.ds-card-n{font:700 36px 'Noto Sans Variable',system-ui,sans-serif;font-variant-numeric:tabular-nums;letter-spacing:-.025em}"
+    },
+    {
+      "name": "Sign Pair Rail Link", "kind": "nav", "refersTo": "rail-link",
+      "description": "Rail items on railway blue; active item is signal yellow.",
+      "html": "<div class=\"ds-rail\"><a class=\"ds-rail-a\"><span>Ledger<br><small lang=\"hi\">खाता</small></span></a><a class=\"ds-rail-a ds-on\"><span>Insights<br><small lang=\"hi\">आज का हाल</small></span></a></div>",
+      "css": ".ds-rail{background:#0b3a8c;padding:12px;width:216px;display:flex;flex-direction:column;gap:4px}.ds-rail-a{display:flex;align-items:center;min-height:48px;padding:0 12px;border-radius:6px;color:#eaf1ff;font:500 15px/1.2 'Noto Sans Variable',system-ui,sans-serif}.ds-rail-a:hover{background:#164aa8}.ds-rail-a small{font-size:12px;font-weight:400;opacity:.75}.ds-on{background:#ffc20e;color:#1b1500;font-weight:600}"
+    },
+    {
+      "name": "Docked Mic", "kind": "custom", "refersTo": "mic-dock",
+      "description": "Raised yellow mic in the centre of the bottom dock.",
+      "html": "<button class=\"ds-mic\" aria-label=\"New sale by voice\"><svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"9\" y=\"2\" width=\"6\" height=\"12\" rx=\"3\"/><path d=\"M5 10a7 7 0 0 0 14 0M12 17v5\"/></svg></button>",
+      "css": ".ds-mic{display:grid;place-items:center;width:56px;height:56px;border:0;border-radius:9999px;background:#ffc20e;color:#1b1500;box-shadow:0 4px 12px rgba(10,16,32,.25),0 0 0 4px #f3f6fb;cursor:pointer;transition:transform .15s}.ds-mic:active{transform:scale(.95)}.ds-mic:focus-visible{outline:2px solid #0b3a8c;outline-offset:6px}"
+    },
+    {
+      "name": "Stock Status Badge", "kind": "chip", "refersTo": "colors.stop-red",
+      "description": "Low stock call-out using the paired soft fill.",
+      "html": "<span class=\"ds-badge\">Low stock</span>",
+      "css": ".ds-badge{display:inline-flex;padding:2px 8px;border-radius:9999px;background:#fbe7e7;color:#c62828;font:500 12px 'Noto Sans Variable',system-ui,sans-serif}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Station Board",
+    "overview": "A shop counter is a platform: things arrive, get called out, and leave on time. SmartLedger takes Indian Railways signage and timetable tradition for its type, palette, density and one move only. A cool paper-white ground carries a railway-blue shell, hairline rules, tabular columns of rupees, and go/stop signal colours that mean exactly that. The microphone is the one yellow signal on the board.\n\nThe system is calm and dense where money is shown and loud only where an action or a warning needs to be. Components are standard shadcn/ui (Radix) on Tailwind, re-skinned entirely through tokens in src/index.css. Light is the platform by day; dark is the night platform, a blue-black ground where yellow takes over as the primary fill.\n\nIt rejects the generic fintech dashboard: white card walls, purple or blue gradients, a hero-metric grid.",
+    "keyCharacteristics": [
+      "Railway blue shell and primary; signal yellow reserved for the mic and the selected state.",
+      "Bilingual sign pairs (English primary, Hindi secondary) on nav items and page titles.",
+      "Tabular numerals set globally; every figure aligns in columns.",
+      "6px radius, hairline borders, near-flat surfaces.",
+      "Departure-board reveal: parsed voice lines post row by row.",
+      "Light and dark themes with the same roles; Hindi is first-class."
+    ],
+    "rules": [
+      { "name": "The One Yellow Rule", "body": "Signal Yellow means \"voice\" or \"you are here\". It never decorates a card, badge, chart or heading.", "section": "colors" },
+      { "name": "The Go/Stop Rule", "body": "Green means money in or healthy; red means stop or low. Never swap them for branding.", "section": "colors" },
+      { "name": "The Paired Surface Rule", "body": "Every status colour is used as text/solid plus its soft fill; never raw alpha tints.", "section": "colors" },
+      { "name": "The Tabular Rule", "body": "font-variant-numeric: tabular-nums is set on body; money and quantities always align in columns. Currency is formatted en-IN with the rupee.", "section": "typography" },
+      { "name": "The Sign Pair Rule", "body": "A bilingual label is English at full size over (or beside) Hindi at 0.8em, normal weight, 75% opacity, tagged lang=\"hi\". Hindi is a translation of the existing label, never new copy.", "section": "typography" },
+      { "name": "The Flat Platform Rule", "body": "Surfaces are flat at rest. A shadow marks something that floats above the page (mic, menu, dialog), never a card.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do use the token roles (bg-background, text-muted-foreground, bg-signal, text-success, soft fills) rather than raw hex.",
+      "Do pair every nav item and page title in English with a Hindi translation (Insights / आज का हाल, Ledger / खाता, Stock / माल, Price Sheet / भाव, Settings / सेटिंग).",
+      "Do keep touch targets at or above 44px on mobile and keep focus rings visible in both themes.",
+      "Do let money be the largest type on a screen and align it with tabular numerals.",
+      "Do make every new motion honour prefers-reduced-motion."
+    ],
+    "donts": [
+      "Don't spend Signal Yellow on anything but voice and the selected state.",
+      "Don't use purple or blue gradients, white card grids around a hero metric, or other generic fintech dashboard devices.",
+      "Don't add shadows to cards, or introduce radii outside the 4/6/8/12px scale.",
+      "Don't set Hindi in a different weight, face or colour from its English pair, or add Hindi copy that is not a translation of an existing label.",
+      "Don't put a quantity, price or total in proportional figures."
+    ]
+  }
+}
