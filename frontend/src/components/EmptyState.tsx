@@ -1,8 +1,25 @@
-import React from 'react'
+import type { ReactNode } from 'react'
+import type { LucideIcon } from 'lucide-react'
 
-export const EmptyState: React.FC<{ title: string, subtitle?: string }> = ({ title, subtitle }) => {
-  return <div style={{ textAlign: 'center', padding: 32, color: 'var(--color-muted)' }}>
-    <div style={{ fontWeight: 600 }}>{title}</div>
-    {subtitle && <div>{subtitle}</div>}
-  </div>
+export function EmptyState({
+  icon: Icon,
+  title,
+  hint,
+  action,
+}: {
+  icon: LucideIcon
+  title: string
+  hint?: string
+  action?: ReactNode
+}) {
+  return (
+    <div className="flex flex-col items-center gap-2 px-4 py-12 text-center">
+      <span className="grid size-11 place-items-center rounded-full bg-muted text-muted-foreground">
+        <Icon className="size-5" aria-hidden />
+      </span>
+      <p className="font-semibold">{title}</p>
+      {hint && <p className="max-w-xs text-sm text-muted-foreground">{hint}</p>}
+      {action && <div className="mt-2">{action}</div>}
+    </div>
+  )
 }

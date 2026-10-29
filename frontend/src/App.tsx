@@ -1,53 +1,39 @@
 import React from 'react'
-import { NavLink, Route, Routes } from 'react-router-dom'
-import { Insights } from './pages/Insights'
-import { Ledger } from './pages/Ledger'
-import { Stock } from './pages/Stock'
-import { PriceSheet } from './pages/PriceSheet'
-import { Settings } from './pages/Settings'
-import { AuthPage } from './pages/AuthPage'
-import { ProtectedRoute } from './components/ProtectedRoute'
-import { useAuth } from './hooks/useAuth'
-import { ManualLedger } from './pages/ManualLedger'
-import { LedgerDetails } from './pages/LedgerDetails'
-import { VoiceLedger } from './pages/VoiceLedger'
-import { GlobalVoice } from './components/GlobalVoice'
+import { Navigate, Route, Routes } from 'react-router-dom'
+import { AuthPage } from '@/pages/AuthPage'
+import { Insights } from '@/pages/Insights'
+import { Ledger } from '@/pages/Ledger'
+import { LedgerDetails } from '@/pages/LedgerDetails'
+import { ManualLedger } from '@/pages/ManualLedger'
+import { VoiceLedger } from '@/pages/VoiceLedger'
+import { Stock } from '@/pages/Stock'
+import { PriceSheet } from '@/pages/PriceSheet'
+import { Settings } from '@/pages/Settings'
+import { ProtectedRoute } from '@/components/ProtectedRoute'
+import { AppShell } from '@/components/AppShell'
 
-const Layout: React.FC<React.PropsWithChildren> = ({ children }) => {
-  const { logout } = useAuth()
-  return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
-      <aside style={{ width: 220, background: 'var(--color-primary)', color: '#fff', padding: 16 }}>
-        <div style={{ fontWeight: 700, marginBottom: 24 }}>SmartLedger</div>
-        <nav style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <NavLink to="/" style={{ color: '#fff', textDecoration: 'none' }}>Insights</NavLink>
-          <NavLink to="/ledger" style={{ color: '#fff', textDecoration: 'none' }}>Ledger</NavLink>
-          <NavLink to="/stock" style={{ color: '#fff', textDecoration: 'none' }}>Stock</NavLink>
-          <NavLink to="/price-sheet" style={{ color: '#fff', textDecoration: 'none' }}>Price Sheet</NavLink>
-          <NavLink to="/settings" style={{ color: '#fff', textDecoration: 'none' }}>Settings</NavLink>
-          <button onClick={logout} style={{ textAlign: 'left', background: 'none', border: 'none', color: '#fff', padding: 0 }}>Logout</button>
-        </nav>
-      </aside>
-      <main style={{ flex: 1, padding: 24 }}>{children}</main>
-      <GlobalVoice />
-    </div>
-  )
-}
-
-const App: React.FC = () => {
-  return (
-    <Routes>
-      <Route path="/auth" element={<AuthPage />} />
-      <Route path="/" element={<ProtectedRoute><Layout><Insights /></Layout></ProtectedRoute>} />
-      <Route path="/ledger" element={<ProtectedRoute><Layout><Ledger /></Layout></ProtectedRoute>} />
-      <Route path="/ledger/manual" element={<ProtectedRoute><Layout><ManualLedger /></Layout></ProtectedRoute>} />
-      <Route path="/ledger/voice" element={<ProtectedRoute><Layout><VoiceLedger /></Layout></ProtectedRoute>} />
-      <Route path="/ledger/:id" element={<ProtectedRoute><Layout><LedgerDetails /></Layout></ProtectedRoute>} />
-      <Route path="/stock/*" element={<ProtectedRoute><Layout><Stock /></Layout></ProtectedRoute>} />
-      <Route path="/price-sheet" element={<ProtectedRoute><Layout><PriceSheet /></Layout></ProtectedRoute>} />
-      <Route path="/settings" element={<ProtectedRoute><Layout><Settings /></Layout></ProtectedRoute>} />
-    </Routes>
-  )
-}
+const App: React.FC = () => (
+  <Routes>
+    <Route path="/auth" element={<AuthPage />} />
+    <Route
+      element={
+        <ProtectedRoute>
+          <AppShell />
+        </ProtectedRoute>
+      }
+    >
+      <Route path="/" element={<Navigate to="/insights" replace />} />
+      <Route path="/insights" element={<Insights />} />
+      <Route path="/ledger" element={<Ledger />} />
+      <Route path="/ledger/voice" element={<VoiceLedger />} />
+      <Route path="/ledger/manual" element={<ManualLedger />} />
+      <Route path="/ledger/:id" element={<LedgerDetails />} />
+      <Route path="/stock" element={<Stock />} />
+      <Route path="/price-sheet" element={<PriceSheet />} />
+      <Route path="/settings" element={<Settings />} />
+    </Route>
+    <Route path="*" element={<Navigate to="/insights" replace />} />
+  </Routes>
+)
 
 export default App
